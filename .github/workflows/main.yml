@@ -3,6 +3,10 @@ name: Build MLSS Android APK
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'MLSS_Android_Studio_Project_FINAL_ICON.zip'
+      - '.github/workflows/main.yml'
 
 jobs:
   build:
@@ -15,8 +19,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract Android project ZIP
-        run: unzip -q MLSS_Android_Studio_Project.zip -d project
+      - name: Check and Extract New Android Project ZIP
+        run: |
+          test -f MLSS_Android_Studio_Project_FINAL_ICON.zip
+          unzip -q MLSS_Android_Studio_Project_FINAL_ICON.zip -d project
+          test -f project/mlss_android/app/src/main/AndroidManifest.xml
+          test -f project/mlss_android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          grep -q 'android:icon="@mipmap/ic_launcher"' project/mlss_android/app/src/main/AndroidManifest.xml
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -38,12 +47,12 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build APK
-        run: |
-          cd project/mlss_android
-          gradle assembleDebug
+        working-directory: project/mlss_android
+        run: gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MLSS-Android-APK
-          path: project/mlss_android/app/build/outputs/apk/debug/*.apk
+          name: MLSS-APK-with-selected-icon
+          path: project/mlss_android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
